@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_ENHO" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <TOOL>HOOK_IMPL</TOOL>
+   <SHORTTEXT>CL_WDR_VALUE_HELP_HANDLER Web Dynpro: Value Help</SHORTTEXT>
+   <ORIGINAL_OBJECT>
+    <PGMID>R3TR</PGMID>
+    <ORG_OBJ_TYPE>CLAS</ORG_OBJ_TYPE>
+    <ORG_OBJ_NAME>CL_WDR_VALUE_HELP_HANDLER</ORG_OBJ_NAME>
+    <ORG_MAIN_TYPE>CLAS</ORG_MAIN_TYPE>
+    <ORG_MAIN_NAME>CL_WDR_VALUE_HELP_HANDLER</ORG_MAIN_NAME>
+    <PROGRAMNAME>CL_WDR_VALUE_HELP_HANDLER=====CP</PROGRAMNAME>
+   </ORIGINAL_OBJECT>
+   <ENHANCEMENTS>
+    <ENH_HOOK_IMPL>
+     <PROGRAMNAME>CL_WDR_VALUE_HELP_HANDLER=====CP</PROGRAMNAME>
+     <ENHMODE>D</ENHMODE>
+     <FULL_NAME>\PR:CL_WDR_VALUE_HELP_HANDLER=====CP\TY:LCL_DDIC_SUGGEST_HANDLER_2\ME:GET_FIELD_LABEL\SE:BEGIN\EI</FULL_NAME>
+     <SOURCE>
+      <item>* bug fix.</item>
+      <item>  READ TABLE m_shlp-fielddescr INTO data(zl_dfies) WITH KEY fieldname = component-name.</item>
+      <item>  IF sy-subrc EQ 0.</item>
+      <item>    clear field_label.</item>
+      <item>    field_label = zl_dfies-scrtext_m.</item>
+      <item>    if field_label is initial.</item>
+      <item>      field_label = zl_dfies-scrtext_l.</item>
+      <item>      if field_label is initial.</item>
+      <item>        field_label = zl_dfies-scrtext_s.</item>
+      <item>        if field_label is initial.</item>
+      <item>          field_label = zl_dfies-reptext.</item>
+      <item>        endif.</item>
+      <item>      endif.</item>
+      <item>    endif.</item>
+      <item>    IF field_label IS NOT INITIAL.</item>
+      <item>      RETURN.</item>
+      <item>    ENDIF.</item>
+      <item>  ENDIF.</item>
+     </SOURCE>
+    </ENH_HOOK_IMPL>
+    <ENH_HOOK_IMPL>
+     <PROGRAMNAME>CL_WDR_VALUE_HELP_HANDLER=====CP</PROGRAMNAME>
+     <ENHMODE>D</ENHMODE>
+     <FULL_NAME>\PR:CL_WDR_VALUE_HELP_HANDLER=====CP\TY:LCL_DDIC_SUGGEST_HANDLER_2\ME:GET_RESULT_AS_JSON\SE:BEGIN\EI</FULL_NAME>
+     <SOURCE>
+      <item>* bug fix.</item>
+      <item>    m_shlp = c_shlp.</item>
+     </SOURCE>
+    </ENH_HOOK_IMPL>
+   </ENHANCEMENTS>
+   <SOTR>
+    <item>
+     <HEADER>
+      <CONCEPT>42010A02B0231EDBB7C069AF5E66DD40</CONCEPT>
+      <CREA_LAN>E</CREA_LAN>
+      <TRALA_TYPE>1</TRALA_TYPE>
+      <OBJID_VEC>AAI=</OBJID_VEC>
+     </HEADER>
+     <ENTRIES>
+      <SOTR_TEXT>
+       <CONCEPT>42010A02B0231EDBB7C069AF5E66DD40</CONCEPT>
+       <LANGU>E</LANGU>
+       <LFD_NUM>0001</LFD_NUM>
+       <FLAG_CNTXT>X</FLAG_CNTXT>
+       <STATUS>R</STATUS>
+       <LENGTH>255</LENGTH>
+       <TEXT>CL_WDR_VALUE_HELP_HANDLER Web Dynpro: Value Help</TEXT>
+      </SOTR_TEXT>
+     </ENTRIES>
+    </item>
+   </SOTR>
+   <SOTR_USE>
+    <SOTR_USE>
+     <PGMID>R3TR</PGMID>
+     <OBJECT>ENHO</OBJECT>
+     <OBJ_NAME>ZE_ARSH_CL_WDR_VALUE_HELP_HAND</OBJ_NAME>
+     <CONCEPT>42010A02B0231EDBB7C069AF5E66DD40</CONCEPT>
+     <LFD_NUM>0001</LFD_NUM>
+    </SOTR_USE>
+   </SOTR_USE>
+  </asx:values>
+ </asx:abap>
+</abapGit>

@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<abapGit version="v1.0.0" serializer="LCL_OBJECT_FUGR" serializer_version="v1.0.0">
+ <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
+  <asx:values>
+   <AREAT>All Round Search Help</AREAT>
+   <INCLUDES>
+    <SOBJ_NAME>LZARSHF01</SOBJ_NAME>
+    <SOBJ_NAME>LZARSHTOP</SOBJ_NAME>
+    <SOBJ_NAME>SAPLZARSH</SOBJ_NAME>
+   </INCLUDES>
+   <FUNCTIONS>
+    <item>
+     <FUNCNAME>ZARSH_F4</FUNCNAME>
+     <SHORT_TEXT>F4 exit</SHORT_TEXT>
+     <CHANGING>
+      <RSCHA>
+       <PARAMETER>SHLP</PARAMETER>
+       <TYP>SHLP_DESCR</TYP>
+      </RSCHA>
+      <RSCHA>
+       <PARAMETER>CALLCONTROL</PARAMETER>
+       <DBFIELD>DDSHF4CTRL</DBFIELD>
+      </RSCHA>
+     </CHANGING>
+     <TABLES>
+      <RSTBL>
+       <PARAMETER>SHLP_TAB</PARAMETER>
+       <TYP>SHLP_DESCT</TYP>
+      </RSTBL>
+      <RSTBL>
+       <PARAMETER>RECORD_TAB</PARAMETER>
+       <DBSTRUCT>SEAHLPRES</DBSTRUCT>
+      </RSTBL>
+     </TABLES>
+     <DOCUMENTATION>
+      <RSFDO>
+       <PARAMETER>SHLP_TAB</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>Table of elementary search helps</STEXT>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>RECORD_TAB</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>Hit list</STEXT>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>SHLP</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>Single (current) search help</STEXT>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>CALLCONTROL</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>Control of the F4 process</STEXT>
+      </RSFDO>
+     </DOCUMENTATION>
+    </item>
+    <item>
+     <FUNCNAME>ZARSH_MAKE_WHERE</FUNCNAME>
+     <SHORT_TEXT>where</SHORT_TEXT>
+     <IMPORT>
+      <RSIMP>
+       <PARAMETER>IT_RANGE_REF</PARAMETER>
+       <REFERENCE>X</REFERENCE>
+       <TYP>WDR_SO_T_RANGE_REF</TYP>
+      </RSIMP>
+     </IMPORT>
+     <EXPORT>
+      <RSEXP>
+       <PARAMETER>EV_SQL_WHERE</PARAMETER>
+       <REFERENCE>X</REFERENCE>
+       <TYP>STRING</TYP>
+      </RSEXP>
+     </EXPORT>
+     <DOCUMENTATION>
+      <RSFDO>
+       <PARAMETER>IT_RANGE_REF</PARAMETER>
+       <KIND>P</KIND>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>EV_SQL_WHERE</PARAMETER>
+       <KIND>P</KIND>
+      </RSFDO>
+     </DOCUMENTATION>
+    </item>
+    <item>
+     <FUNCNAME>ZARSH_PROPOSAL</FUNCNAME>
+     <SHORT_TEXT>ZH_ALL_ROUND proposal.</SHORT_TEXT>
+     <IMPORT>
+      <RSIMP>
+       <PARAMETER>IV_TABNAME</PARAMETER>
+       <REFERENCE>X</REFERENCE>
+       <TYP>CLIKE</TYP>
+      </RSIMP>
+      <RSIMP>
+       <PARAMETER>IV_FIELDNAME</PARAMETER>
+       <REFERENCE>X</REFERENCE>
+       <TYP>CLIKE</TYP>
+      </RSIMP>
+     </IMPORT>
+     <EXPORT>
+      <RSEXP>
+       <PARAMETER>EV_TABNAME</PARAMETER>
+       <TYP>TABNAME</TYP>
+      </RSEXP>
+      <RSEXP>
+       <PARAMETER>ET_FIELD</PARAMETER>
+       <REFERENCE>X</REFERENCE>
+       <TYP>STRINGTAB</TYP>
+      </RSEXP>
+      <RSEXP>
+       <PARAMETER>EV_DISTINCT</PARAMETER>
+       <REFERENCE>X</REFERENCE>
+       <TYP>FLAG</TYP>
+      </RSEXP>
+     </EXPORT>
+     <DOCUMENTATION>
+      <RSFDO>
+       <PARAMETER>IV_TABNAME</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>Table Name</STEXT>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>IV_FIELDNAME</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>Field Name</STEXT>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>EV_TABNAME</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>Table Name</STEXT>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>ET_FIELD</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>Table with Strings</STEXT>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>EV_DISTINCT</PARAMETER>
+       <KIND>P</KIND>
+       <STEXT>General Flag</STEXT>
+      </RSFDO>
+     </DOCUMENTATION>
+    </item>
+   </FUNCTIONS>
+  </asx:values>
+ </asx:abap>
+</abapGit>
