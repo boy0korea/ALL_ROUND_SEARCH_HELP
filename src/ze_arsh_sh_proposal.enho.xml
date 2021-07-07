@@ -37,8 +37,8 @@
       <item>        et_field     = zlt_field</item>
       <item>        ev_distinct  = zlv_distinct.</item>
       <item>    IF zlv_tabname IS INITIAL.</item>
-      <item>      zlv_tabname = &apos;** input table name **&apos;.</item>
-      <item>      APPEND &apos;** input field name **&apos; TO zlt_field.</item>
+      <item>      zlv_tabname = &apos;**table name**&apos;.</item>
+      <item>      APPEND &apos;**field name**&apos; TO zlt_field.</item>
       <item>    ENDIF.</item>
       <item>    zlv_count = lines( zlt_field ).</item>
       <item/>

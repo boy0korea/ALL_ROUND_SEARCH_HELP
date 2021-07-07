@@ -60,9 +60,9 @@ FUNCTION zarsh_proposal.
     ENDIF.
   ELSE.
     " self table one column
-    READ TABLE lt_field_list INTO ls_field_list WITH KEY domname = ls_dd04v-domname.
+    READ TABLE lt_field_list INTO ls_field_list WITH KEY fieldname = iv_fieldname.
     IF sy-subrc <> 0.
-      READ TABLE lt_field_list INTO ls_field_list WITH KEY fieldname = iv_fieldname.
+      READ TABLE lt_field_list INTO ls_field_list WITH KEY domname = ls_dd04v-domname.
       IF sy-subrc <> 0.
         READ TABLE lt_field_list INTO ls_field_list WITH KEY leng = ls_dd04v-leng.
         IF sy-subrc <> 0.
