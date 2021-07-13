@@ -9,6 +9,7 @@ FUNCTION zarsh_f4.
 *"     VALUE(CALLCONTROL) LIKE  DDSHF4CTRL STRUCTURE  DDSHF4CTRL
 *"----------------------------------------------------------------------
   DATA: ls_help_info      TYPE help_info,
+        lv_ral_id         TYPE char255,
         ls_selopt         TYPE ddshselopt,
         ls_fieldprop      TYPE ddshfprop,
         lt_fielddescr     TYPE TABLE OF dfies,
@@ -40,6 +41,7 @@ FUNCTION zarsh_f4.
         lv_num_fields     TYPE i,
         lv_field_length   TYPE i,
         lv_offset         TYPE i,
+        lv_mod4           TYPE i,
         lv_index          TYPE i.
   FIELD-SYMBOLS: <lt_data>         TYPE table,
                  <ls_data>         TYPE data,
@@ -168,16 +170,40 @@ FUNCTION zarsh_f4.
 
   " case: no parameter
   IF lv_table IS INITIAL.
-    IMPORT called_for_field = ls_help_info-fieldname
-           called_for_tab = ls_help_info-tabname FROM MEMORY ID 'CALLFIELD'.
-    IF ls_help_info-tabname IS NOT INITIAL.
-      lv_table = ls_help_info-tabname.
-      lv_field = ls_help_info-fieldname.
+
+    IF cl_dsh_type_ahead_processor=>type_ahead_active EQ abap_true.
+*          " START: Read access logging (RAL) only relevant in real SAP GUI input fields - not for other API calls
+*          ral_id = search_help_info-dynpprog && ':' && search_help_info-dynpro && ':' && screen_data-name.
+*          SET PARAMETER ID 'SDSH_RAL' FIELD ral_id.
+      GET PARAMETER ID 'SDSH_RAL' FIELD lv_ral_id.
+      SPLIT lv_ral_id AT ':' INTO TABLE lt_string.
+      IF lines( lt_string ) EQ 3.
+        lv_string = |({ lt_string[ 1 ] }){ lt_string[ 3 ] }|.
+        ASSIGN (lv_string) TO <lv_data>.
+        IF sy-subrc EQ 0.
+          DESCRIBE FIELD <lv_data> HELP-ID lv_string.
+          SPLIT lv_string AT '-' INTO lv_table lv_field.
+        ENDIF.
+      ENDIF.
     ELSE.
-      SPLIT '-' AT shlp-interface[ f4field = abap_true ]-valfield INTO lv_table lv_field.
+      IF 1 EQ 2.
+        " MEMORY ID 'CALLFIELD'
+        CALL FUNCTION 'HELP_START'.
+      ENDIF.
+      IMPORT called_for_field = ls_help_info-fieldname
+             called_for_tab = ls_help_info-tabname FROM MEMORY ID 'CALLFIELD'.
+      IF ls_help_info-tabname IS NOT INITIAL.
+        lv_table = ls_help_info-tabname.
+        lv_field = ls_help_info-fieldname.
+      ELSE.
+        IF line_exists( shlp-interface[ f4field = abap_true ] ).
+          SPLIT shlp-interface[ f4field = abap_true ]-valfield AT '-' INTO lv_table lv_field.
+        ENDIF.
+      ENDIF.
     ENDIF.
     CLEAR: lt_field.
 
+    IF lv_field IS NOT INITIAL.
     CALL FUNCTION 'ZARSH_PROPOSAL'
       EXPORTING
         iv_tabname   = lv_table
@@ -186,6 +212,7 @@ FUNCTION zarsh_f4.
         ev_tabname   = lv_table
         et_field     = lt_field
         ev_distinct  = lv_distinct.
+  ENDIF.
   ENDIF.
 
   IF lv_table IS INITIAL OR
@@ -199,6 +226,7 @@ FUNCTION zarsh_f4.
   lt_field_list = lo_rtti->get_ddic_field_list( ).
   SORT lt_field_list BY fieldname.
 
+  CLEAR: lt_string.
   LOOP AT lt_field INTO lv_field.
     APPEND |"{ lv_field }"| TO lt_string.
     ls_result_comp-name = lv_field.
@@ -225,6 +253,9 @@ FUNCTION zarsh_f4.
     IF cl_dsh_type_ahead_processor=>type_ahead_active EQ abap_true.
       " type ahead = value suggests
       " it runs only textsearch.
+      IF shlp-textsearch-request IS INITIAL.
+        shlp-textsearch-request = shlp-selopt[ 1 ]-low.
+      ENDIF.
     ELSEIF lt_range_ref IS NOT INITIAL.
       CALL FUNCTION 'ZARSH_MAKE_WHERE'
         EXPORTING
@@ -403,8 +434,9 @@ FUNCTION zarsh_f4.
         ls_fielddescr-outputlen = 200.
       ENDIF.
       lv_offset = ls_fielddescr-offset + ls_fielddescr-intlen.
-      IF lv_offset MOD 2 EQ 1.
-        lv_offset = lv_offset + 1.
+      lv_mod4 = lv_offset mod 4.
+      IF lv_mod4 > 0.
+        lv_offset = lv_offset + 4 - lv_mod4.
       ENDIF.
       IF lv_offset > 2000.
         " cut over
