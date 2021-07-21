@@ -97,6 +97,38 @@ FUNCTION zarsh_f4.
     ENDCASE.
   ENDLOOP.
 
+  " alpha conversion
+  LOOP AT shlp-fielddescr INTO ls_fielddescr WHERE convexit = 'ALPHA'.
+    READ TABLE lt_range_ref ASSIGNING <ls_range_ref> WITH KEY attribute = ls_fielddescr-fieldname.
+    CHECK: sy-subrc EQ 0.
+    lv_string = ls_fielddescr-tabname && '-' && ls_fielddescr-fieldname.
+    CREATE DATA lr_data TYPE (lv_string).
+    ASSIGN lr_data->* TO <lv_data>.
+    ASSIGN <ls_range_ref>-range->* TO <lt_range>.
+    DATA(lo_range_value) = CAST cl_abap_datadescr( cl_abap_datadescr=>describe_by_data( <lv_data> ) ).
+    DATA(lo_range_table) = cl_abap_tabledescr=>create(
+      cl_abap_structdescr=>create(
+        VALUE #(
+          ( name = 'SIGN' type = cl_abap_elemdescr=>get_c( 1 ) )
+          ( name = 'OPTION' type = cl_abap_elemdescr=>get_c( 2 ) )
+          ( name = 'LOW' type = lo_range_value )
+          ( name = 'HIGH' type = lo_range_value )
+        )
+      )
+    ).
+    CREATE DATA lr_data TYPE HANDLE lo_range_table.
+    ASSIGN lr_data->* TO <lt_data>.
+    MOVE-CORRESPONDING <lt_range> TO <lt_data>.
+    CALL FUNCTION 'CONVERSION_EXIT_ALPHA_RANGE_I'
+      EXPORTING
+        input     = <lv_data>
+      IMPORTING
+        output    = <lv_data>
+      TABLES
+        range_int = <lt_range>
+        range_ext = <lt_data>.
+  ENDLOOP.
+
   " shlp-fieldprop
   LOOP AT shlp-fieldprop INTO ls_fieldprop WHERE defaultval IS NOT INITIAL.
     UNASSIGN <lv_data>.
