@@ -1,0 +1,9 @@
+"Name: \TY:CL_WDR_VALUE_HELP_HANDLER\ME:HANDLE_VALUE_HELP\SE:BEGIN\EI
+ENHANCEMENT 0 ZE_ARSH_CL_WDR_VALUE_HELP_HAND.
+* MEMORY ID 'CALLFIELD'.
+  CALL FUNCTION 'ZARSH_EXPORT_CALLFIELD'
+    EXPORTING
+      context_element   = context_element
+      context_attribute = context_attribute.
+
+ENDENHANCEMENT.

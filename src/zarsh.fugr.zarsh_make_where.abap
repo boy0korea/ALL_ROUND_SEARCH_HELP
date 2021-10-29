@@ -66,7 +66,7 @@ FUNCTION zarsh_make_where.
       rv_result          = ev_sql_where
   ).
 
-
+  ev_sql_where = cl_sadl_sql_formatter=>erase_native( iv_sql = ev_sql_where ).
 
 
 ENDFUNCTION.
