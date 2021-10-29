@@ -22,6 +22,8 @@ FUNCTION zarsh_f4.
         lv_no_fuzzy       TYPE flag,
         lt_field          TYPE TABLE OF string,
         lv_field          TYPE string,
+        lt_const_field    TYPE TABLE OF string,
+        lt_const_value    TYPE TABLE OF string,
         lt_range_ref      TYPE wdr_so_t_range_ref,
         lo_rtti           TYPE REF TO cl_abap_structdescr,
         lt_string         TYPE TABLE OF string,
@@ -58,6 +60,8 @@ FUNCTION zarsh_f4.
   CLEAR: record_tab[].
 
   lt_field = VALUE #( ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ).
+  lt_const_field = VALUE #( ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ).
+  lt_const_value = VALUE #( ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ).
   " shlp-selopt
   LOOP AT shlp-selopt INTO ls_selopt.
     CASE ls_selopt-shlpfield.
@@ -85,6 +89,18 @@ FUNCTION zarsh_f4.
         lt_field[ 8 ] = ls_selopt-low.
       WHEN 'IV_FIELD9'.
         lt_field[ 9 ] = ls_selopt-low.
+      WHEN 'IV_CONST_FIELD01'.
+        lt_const_field[ 1 ] = ls_selopt-low.
+      WHEN 'IV_CONST_FIELD02'.
+        lt_const_field[ 2 ] = ls_selopt-low.
+      WHEN 'IV_CONST_FIELD03'.
+        lt_const_field[ 3 ] = ls_selopt-low.
+      WHEN 'IV_CONST_VALUE01'.
+        lt_const_value[ 1 ] = ls_selopt-low.
+      WHEN 'IV_CONST_VALUE02'.
+        lt_const_value[ 2 ] = ls_selopt-low.
+      WHEN 'IV_CONST_VALUE03'.
+        lt_const_value[ 3 ] = ls_selopt-low.
       WHEN OTHERS.
         AT NEW shlpfield.
           APPEND INITIAL LINE TO lt_range_ref ASSIGNING <ls_range_ref>.
@@ -157,6 +173,18 @@ FUNCTION zarsh_f4.
         ASSIGN lt_field[ 8 ] TO <lv_data>.
       WHEN 'IV_FIELD9'.
         ASSIGN lt_field[ 9 ] TO <lv_data>.
+      WHEN 'IV_CONST_FIELD01'.
+        ASSIGN lt_const_field[ 1 ] TO <lv_data>.
+      WHEN 'IV_CONST_FIELD02'.
+        ASSIGN lt_const_field[ 2 ] TO <lv_data>.
+      WHEN 'IV_CONST_FIELD03'.
+        ASSIGN lt_const_field[ 3 ] TO <lv_data>.
+      WHEN 'IV_CONST_VALUE01'.
+        ASSIGN lt_const_value[ 1 ] TO <lv_data>.
+      WHEN 'IV_CONST_VALUE02'.
+        ASSIGN lt_const_value[ 2 ] TO <lv_data>.
+      WHEN 'IV_CONST_VALUE03'.
+        ASSIGN lt_const_value[ 3 ] TO <lv_data>.
     ENDCASE.
     IF <lv_data> IS ASSIGNED AND <lv_data> IS INITIAL.
       <lv_data> = ls_fieldprop-defaultval.
@@ -192,6 +220,18 @@ FUNCTION zarsh_f4.
         ASSIGN lt_field[ 8 ] TO <lv_data>.
       WHEN 'IV_FIELD9'.
         ASSIGN lt_field[ 9 ] TO <lv_data>.
+      WHEN 'IV_CONST_FIELD01'.
+        ASSIGN lt_const_field[ 1 ] TO <lv_data>.
+      WHEN 'IV_CONST_FIELD02'.
+        ASSIGN lt_const_field[ 2 ] TO <lv_data>.
+      WHEN 'IV_CONST_FIELD03'.
+        ASSIGN lt_const_field[ 3 ] TO <lv_data>.
+      WHEN 'IV_CONST_VALUE01'.
+        ASSIGN lt_const_value[ 1 ] TO <lv_data>.
+      WHEN 'IV_CONST_VALUE02'.
+        ASSIGN lt_const_value[ 2 ] TO <lv_data>.
+      WHEN 'IV_CONST_VALUE03'.
+        ASSIGN lt_const_value[ 3 ] TO <lv_data>.
     ENDCASE.
     IF <lv_data> IS ASSIGNED AND <lv_data> IS INITIAL.
       <lv_data> = ls_fieldiface-value.
@@ -279,6 +319,12 @@ FUNCTION zarsh_f4.
       READ TABLE lt_field_list INTO ls_field_list WITH KEY datatype = 'CLNT'.
       lv_sql = |{ lv_sql } AND { ls_field_list-fieldname } = { sy-mandt }|.
     ENDIF.
+
+    " constant field & value
+    LOOP AT lt_const_field INTO lv_field WHERE table_line IS NOT INITIAL.
+      lv_index = sy-tabix.
+      lv_sql = |{ lv_sql } AND { lv_field } = '{ lt_const_value[ lv_index ] }'|.
+    ENDLOOP.
 
     " shlp-textsearch
     IF shlp-textsearch-request IS NOT INITIAL.
