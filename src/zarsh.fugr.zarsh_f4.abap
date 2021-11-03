@@ -425,6 +425,14 @@ FUNCTION zarsh_f4.
     LOOP AT lt_field INTO lv_field.
       lv_index = sy-tabix.
       READ TABLE lt_field_list INTO ls_field_list WITH KEY fieldname = lv_field BINARY SEARCH.
+      READ TABLE shlp-fielddescr ASSIGNING <ls_fielddescr> WITH KEY fieldname = lv_field.
+      IF sy-subrc EQ 0.
+        " label text
+        <ls_fielddescr>-reptext = ls_field_list-reptext.
+        <ls_fielddescr>-scrtext_s = ls_field_list-scrtext_s.
+        <ls_fielddescr>-scrtext_m = ls_field_list-scrtext_m.
+        <ls_fielddescr>-scrtext_l = ls_field_list-scrtext_l.
+      ENDIF.
       READ TABLE shlp-fielddescr ASSIGNING <ls_fielddescr> WITH KEY fieldname = 'EV_FIELD' && lv_index.
       IF sy-subrc EQ 0.
         " label text
