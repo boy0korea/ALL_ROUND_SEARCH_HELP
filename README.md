@@ -1,6 +1,9 @@
 # ALL_ROUND_SEARCH_HELP
 All Round Search Help
 
+ABAP Version: 750 or higher
+Database System: HDB(HANA)
+
 ## example
 ![image](https://user-images.githubusercontent.com/75079431/128835782-4887f76b-973d-47c2-bf53-ffbcb25882e9.png)
 
