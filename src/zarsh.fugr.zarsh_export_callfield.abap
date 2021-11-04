@@ -1,10 +1,11 @@
 FUNCTION zarsh_export_callfield.
 *"----------------------------------------------------------------------
-*"*"Local Interface:
+*"*"Local interface:
 *"  IMPORTING
 *"     REFERENCE(CONTEXT_ELEMENT) TYPE REF TO  IF_WD_CONTEXT_ELEMENT
 *"       OPTIONAL
 *"     REFERENCE(CONTEXT_ATTRIBUTE) TYPE  STRING OPTIONAL
+*"     REFERENCE(IS_DEFINITION) TYPE  WDR_S_FREE_VS_DEF OPTIONAL
 *"  CHANGING
 *"     REFERENCE(HELP_INFO) TYPE  HELP_INFO OPTIONAL
 *"----------------------------------------------------------------------
@@ -31,6 +32,11 @@ FUNCTION zarsh_export_callfield.
   IF context_element IS NOT INITIAL AND context_attribute IS NOT INITIAL.
     lr_data = context_element->get_static_attributes_ref( ).
     ASSIGN lr_data->(context_attribute) TO <lv_data>.
+  ENDIF.
+
+  IF is_definition-rtti_type IS NOT INITIAL.
+    CREATE DATA lr_data TYPE HANDLE is_definition-rtti_type.
+    ASSIGN lr_data->* TO <lv_data>.
   ENDIF.
 
 

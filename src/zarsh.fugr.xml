@@ -26,6 +26,12 @@
        <REFERENCE>X</REFERENCE>
        <TYP>STRING</TYP>
       </RSIMP>
+      <RSIMP>
+       <PARAMETER>IS_DEFINITION</PARAMETER>
+       <OPTIONAL>X</OPTIONAL>
+       <REFERENCE>X</REFERENCE>
+       <TYP>WDR_S_FREE_VS_DEF</TYP>
+      </RSIMP>
      </IMPORT>
      <CHANGING>
       <RSCHA>
@@ -42,6 +48,10 @@
       </RSFDO>
       <RSFDO>
        <PARAMETER>CONTEXT_ATTRIBUTE</PARAMETER>
+       <KIND>P</KIND>
+      </RSFDO>
+      <RSFDO>
+       <PARAMETER>IS_DEFINITION</PARAMETER>
        <KIND>P</KIND>
       </RSFDO>
       <RSFDO>

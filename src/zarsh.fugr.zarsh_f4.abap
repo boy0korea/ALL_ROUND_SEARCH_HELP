@@ -464,6 +464,11 @@ FUNCTION zarsh_f4.
       <ls_fieldprop>-shlpselpos = <ls_fieldprop>-shlplispos.
     ENDLOOP.
 
+    lv_index = lines( lt_field ) + 1.
+    lv_field = 'EV_FIELD' && lv_index.
+    DELETE shlp-fielddescr WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
+    DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
+
 * map
     CALL FUNCTION 'F4UT_RESULTS_MAP'
       TABLES
@@ -543,5 +548,8 @@ FUNCTION zarsh_f4.
   IF callcontrol-step EQ 'SELECT'.
     callcontrol-step = 'DISP'.
   ENDIF.
+
+  READ TABLE shlp_tab TRANSPORTING NO FIELDS WITH KEY shlpname = shlp-shlpname.
+  MODIFY shlp_tab INDEX sy-tabix FROM shlp.
 
 ENDFUNCTION.
