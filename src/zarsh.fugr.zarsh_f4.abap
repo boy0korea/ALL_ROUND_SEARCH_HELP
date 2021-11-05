@@ -8,6 +8,7 @@ FUNCTION zarsh_f4.
 *"     VALUE(SHLP) TYPE  SHLP_DESCR
 *"     VALUE(CALLCONTROL) LIKE  DDSHF4CTRL STRUCTURE  DDSHF4CTRL
 *"----------------------------------------------------------------------
+* https://github.com/boy0korea/ALL_ROUND_SEARCH_HELP
   DATA: ls_help_info      TYPE help_info,
         lv_ral_id         TYPE char255,
         ls_selopt         TYPE ddshselopt,
