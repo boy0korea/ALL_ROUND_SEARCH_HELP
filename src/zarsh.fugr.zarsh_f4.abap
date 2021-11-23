@@ -482,40 +482,54 @@ FUNCTION zarsh_f4.
 
   ELSE.
     " F4 help
+    IF line_exists( shlp-fielddescr[ fieldname = 'IV_TABLE' ] ).
 * field desc
-    CLEAR: shlp-fielddescr[], ls_fielddescr, ls_fieldprop.
+      CLEAR: shlp-fielddescr[], ls_fielddescr, ls_fieldprop.
 
-    LOOP AT lt_field INTO lv_field.
-      lv_index = sy-tabix.
+      LOOP AT lt_field INTO lv_field.
+        lv_index = sy-tabix.
 
-      READ TABLE lt_field_list INTO ls_fielddescr WITH KEY fieldname = lv_field BINARY SEARCH.
+        READ TABLE lt_field_list INTO ls_fielddescr WITH KEY fieldname = lv_field BINARY SEARCH.
 
-      ls_fielddescr-tabname = lv_table.
-      ls_fielddescr-fieldname = lv_field.
-      ls_fielddescr-position = lv_index.
-      ls_fielddescr-offset = lv_offset.
-      IF ls_fielddescr-leng EQ 0 OR ls_fielddescr-leng > 200.
-        " max length = 200
-        ls_fielddescr-leng = 200.
-        ls_fielddescr-intlen = 400.
-        ls_fielddescr-outputlen = 200.
-      ENDIF.
-      lv_offset = ls_fielddescr-offset + ls_fielddescr-intlen.
-      lv_mod4 = lv_offset MOD 4.
-      IF lv_mod4 > 0.
-        lv_offset = lv_offset + 4 - lv_mod4.
-      ENDIF.
-      IF lv_offset > 2000.
-        " cut over
-        EXIT.
-      ENDIF.
-      APPEND ls_fielddescr TO shlp-fielddescr.
+        ls_fielddescr-tabname = lv_table.
+        ls_fielddescr-fieldname = lv_field.
+        ls_fielddescr-position = lv_index.
+        ls_fielddescr-offset = lv_offset.
+        IF ls_fielddescr-leng EQ 0 OR ls_fielddescr-leng > 200.
+          " max length = 200
+          ls_fielddescr-leng = 200.
+          ls_fielddescr-intlen = 400.
+          ls_fielddescr-outputlen = 200.
+        ENDIF.
+        lv_offset = ls_fielddescr-offset + ls_fielddescr-intlen.
+        lv_mod4 = lv_offset MOD 4.
+        IF lv_mod4 > 0.
+          lv_offset = lv_offset + 4 - lv_mod4.
+        ENDIF.
+        IF lv_offset > 2000.
+          " cut over
+          EXIT.
+        ENDIF.
+        APPEND ls_fielddescr TO shlp-fielddescr.
 
-      ls_fieldprop-fieldname = ls_fielddescr-fieldname.
-      ls_fieldprop-shlpselpos = lv_index.
-      APPEND ls_fieldprop TO shlp-fieldprop.
-    ENDLOOP.
+        ls_fieldprop-fieldname = ls_fielddescr-fieldname.
+        ls_fieldprop-shlpselpos = lv_index.
+        APPEND ls_fieldprop TO shlp-fieldprop.
+      ENDLOOP.
 
+      LOOP AT shlp-fielddescr ASSIGNING <ls_fielddescr>.
+        READ TABLE lt_field TRANSPORTING NO FIELDS WITH KEY table_line = <ls_fielddescr>-fieldname.
+        IF sy-subrc EQ 0.
+          lv_index = sy-tabix.
+          ls_fielddescr = <ls_fielddescr>.
+          CLEAR: ls_fielddescr-position.
+          APPEND ls_fielddescr TO lt_fielddescr.
+          <ls_fielddescr>-fieldname = 'EV_FIELD' && lv_index.
+        ENDIF.
+      ENDLOOP.
+      APPEND LINES OF lt_fielddescr TO shlp-fielddescr.
+
+    ENDIF.
 
 * map
     CALL FUNCTION 'F4UT_RESULTS_MAP'
@@ -526,18 +540,6 @@ FUNCTION zarsh_f4.
       CHANGING
         shlp        = shlp
         callcontrol = callcontrol.
-
-    LOOP AT shlp-fielddescr ASSIGNING <ls_fielddescr>.
-      READ TABLE lt_field TRANSPORTING NO FIELDS WITH KEY table_line = <ls_fielddescr>-fieldname.
-      IF sy-subrc EQ 0.
-        lv_index = sy-tabix.
-        ls_fielddescr = <ls_fielddescr>.
-        CLEAR: ls_fielddescr-position.
-        APPEND ls_fielddescr TO lt_fielddescr.
-        <ls_fielddescr>-fieldname = 'EV_FIELD' && lv_index.
-      ENDIF.
-    ENDLOOP.
-    APPEND LINES OF lt_fielddescr TO shlp-fielddescr.
 
   ENDIF.
 
