@@ -9,43 +9,45 @@ FUNCTION zarsh_f4.
 *"     VALUE(CALLCONTROL) LIKE  DDSHF4CTRL STRUCTURE  DDSHF4CTRL
 *"----------------------------------------------------------------------
 * https://github.com/boy0korea/ALL_ROUND_SEARCH_HELP
-  DATA: ls_help_info      TYPE help_info,
-        lv_ral_id         TYPE char255,
-        ls_selopt         TYPE ddshselopt,
-        ls_fieldprop      TYPE ddshfprop,
-        lt_fielddescr     TYPE TABLE OF dfies,
-        ls_fielddescr     TYPE dfies,
-        ls_fieldiface     TYPE ddshiface,
-        lt_data_suggest   TYPE TABLE OF zarsh_dummy,
-        ls_data_suggest   TYPE zarsh_dummy,
-        lv_table          TYPE tabname,
-        lv_distinct       TYPE flag,
-        lv_no_fuzzy       TYPE flag,
-        lt_field          TYPE TABLE OF string,
-        lv_field          TYPE string,
-        lt_const_field    TYPE TABLE OF string,
-        lt_const_value    TYPE TABLE OF string,
-        lt_range_ref      TYPE wdr_so_t_range_ref,
-        lo_rtti           TYPE REF TO cl_abap_structdescr,
-        lt_string         TYPE TABLE OF string,
-        lv_string         TYPE string,
-        lo_result_rtti    TYPE REF TO cl_abap_structdescr,
-        lt_result_comp    TYPE abap_component_tab,
-        ls_result_comp    TYPE abap_componentdescr,
-        lv_sql_where      TYPE string,
-        lv_sql_select     TYPE string,
-        lv_sql            TYPE string,
-        lr_data           TYPE REF TO data,
-        lo_result         TYPE REF TO cl_sql_result_set,
-        lt_field_list     TYPE ddfields,
-        ls_field_list     TYPE dfies,
-        ls_field_list_ref TYPE dfies,
-        lv_maxnum         TYPE i,
-        lv_num_fields     TYPE i,
-        lv_field_length   TYPE i,
-        lv_offset         TYPE i,
-        lv_mod4           TYPE i,
-        lv_index          TYPE i.
+  DATA: ls_help_info        TYPE help_info,
+        ls_selopt           TYPE ddshselopt,
+        ls_fieldprop        TYPE ddshfprop,
+        lt_fielddescr       TYPE TABLE OF dfies,
+        ls_fielddescr       TYPE dfies,
+        ls_fieldiface       TYPE ddshiface,
+        lt_data_suggest     TYPE TABLE OF zarsh_dummy,
+        ls_data_suggest     TYPE zarsh_dummy,
+        lv_table            TYPE tabname,
+        lv_distinct         TYPE flag,
+        lv_no_fuzzy         TYPE flag,
+        lt_const_field      TYPE TABLE OF string,
+        lt_const_value      TYPE TABLE OF string,
+        lt_range_ref        TYPE wdr_so_t_range_ref,
+        lo_rtti             TYPE REF TO cl_abap_structdescr,
+        lt_string           TYPE TABLE OF string,
+        lv_string           TYPE string,
+        lo_result_rtti      TYPE REF TO cl_abap_structdescr,
+        lt_result_comp      TYPE abap_component_tab,
+        ls_result_comp      TYPE abap_componentdescr,
+        lv_sql_where        TYPE string,
+        lv_sql_select       TYPE string,
+        lv_sql              TYPE string,
+        lr_data             TYPE REF TO data,
+        lo_result           TYPE REF TO cl_sql_result_set,
+        lt_field_list       TYPE ddfields,
+        lt_field_list_text  TYPE ddfields,
+        ls_field_list       TYPE dfies,
+        ls_field_list_ref   TYPE dfies,
+        lt_field            TYPE TABLE OF string,
+        lv_field            TYPE string,
+        lv_text_table       TYPE tabname,
+        lv_text_filed_exist TYPE flag,
+        lv_maxnum           TYPE i,
+        lv_num_fields       TYPE i,
+        lv_field_length     TYPE i,
+        lv_offset           TYPE i,
+        lv_mod4             TYPE i,
+        lv_index            TYPE i.
   FIELD-SYMBOLS: <lt_data>         TYPE table,
                  <ls_data>         TYPE data,
                  <lv_data>         TYPE data,
@@ -272,15 +274,58 @@ FUNCTION zarsh_f4.
   lo_rtti ?= cl_abap_structdescr=>describe_by_name( lv_table ).
   CHECK: lo_rtti->get_ddic_header( )-tabform EQ 'T'.  " T	Table/view stored transparently in the database
   lt_field_list = lo_rtti->get_ddic_field_list( ).
+  SELECT SINGLE tabname
+    INTO lv_text_table
+    FROM dd08l
+    WHERE as4local = 'A'
+      AND checktable = lv_table
+      AND frkart = 'TEXT'.
+  IF lv_text_table IS NOT INITIAL.
+    CALL FUNCTION 'DDIF_FIELDINFO_GET'
+      EXPORTING
+        tabname   = lv_text_table
+      TABLES
+        dfies_tab = lt_field_list_text.
+    LOOP AT lt_field_list_text INTO ls_field_list WHERE keyflag = abap_false.
+      APPEND ls_field_list TO lt_field_list.
+    ENDLOOP.
+  ENDIF.
   SORT lt_field_list BY fieldname.
+
+
 
   CLEAR: lt_string.
   LOOP AT lt_field INTO lv_field.
+    READ TABLE lt_field_list INTO ls_field_list WITH KEY fieldname = lv_field BINARY SEARCH.
+    IF sy-subrc <> 0.
+      DELETE lt_field.
+      CONTINUE.
+    ENDIF.
+    IF ls_field_list-tabname EQ lv_text_table.
+      lv_text_filed_exist = abap_true.
+    ENDIF.
     APPEND |"{ lv_field }"| TO lt_string.
     ls_result_comp-name = lv_field.
-    ls_result_comp-type = lo_rtti->get_component_type( lv_field ).
+*    ls_result_comp-type = lo_rtti->get_component_type( lv_field ).
+    ls_result_comp-type ?= cl_abap_elemdescr=>describe_by_name( ls_field_list-rollname ).
     APPEND ls_result_comp TO lt_result_comp.
   ENDLOOP.
+  IF lv_text_table IS NOT INITIAL AND
+     lv_text_filed_exist EQ abap_false.
+    IF lines( lt_field ) > 6.
+      DELETE lt_field FROM 7.
+      DELETE lt_string FROM 7.
+      DELETE lt_result_comp FROM 7.
+    ENDIF.
+    LOOP AT lt_field_list_text INTO ls_field_list WHERE keyflag = abap_false.
+      lv_field = ls_field_list-fieldname.
+      APPEND lv_field TO lt_field.
+      APPEND |"{ lv_field }"| TO lt_string.
+      ls_result_comp-name = lv_field.
+      ls_result_comp-type ?= cl_abap_elemdescr=>describe_by_name( ls_field_list-rollname ).
+      APPEND ls_result_comp TO lt_result_comp.
+    ENDLOOP.
+  ENDIF.
   CONCATENATE LINES OF lt_string INTO lv_sql_select SEPARATED BY `, `.
   lo_result_rtti = cl_abap_structdescr=>create( lt_result_comp ).
   CREATE DATA lr_data TYPE HANDLE lo_result_rtti.
@@ -298,6 +343,20 @@ FUNCTION zarsh_f4.
     ENDIF.
     lv_sql = |{ lv_sql } { lv_sql_select } FROM "{ lv_table }"|.
 
+    IF lv_text_table IS NOT INITIAL.
+      lv_sql = |{ lv_sql } AS A JOIN "{ lv_text_table }" AS T|.
+      LOOP AT lt_field_list_text INTO ls_field_list WHERE keyflag = abap_true.
+        lv_index = sy-tabix.
+        IF lv_index EQ 1.
+          lv_sql = |{ lv_sql } ON A."{ ls_field_list-fieldname }" = T."{ ls_field_list-fieldname }"|.
+        ELSEIF ls_field_list-datatype EQ 'LANG'.
+          lv_sql = |{ lv_sql } AND T."{ ls_field_list-fieldname }" = '{ sy-langu }'|.
+        ELSE.
+          lv_sql = |{ lv_sql } AND A."{ ls_field_list-fieldname }" = T."{ ls_field_list-fieldname }"|.
+        ENDIF.
+      ENDLOOP.
+    ENDIF.
+
     IF cl_dsh_type_ahead_processor=>type_ahead_active EQ abap_true.
       " type ahead = value suggests
       " it runs only textsearch.
@@ -305,26 +364,34 @@ FUNCTION zarsh_f4.
         shlp-textsearch-request = shlp-selopt[ 1 ]-low.
       ENDIF.
     ELSEIF lt_range_ref IS NOT INITIAL.
+      LOOP AT lt_range_ref ASSIGNING <ls_range_ref> WHERE attribute CP 'EV_FIELD*'.
+        lv_index = <ls_range_ref>-attribute+8.
+        <ls_range_ref>-attribute = lt_field[ lv_index ].
+      ENDLOOP.
       CALL FUNCTION 'ZARSH_MAKE_WHERE'
         EXPORTING
           it_range_ref = lt_range_ref
         IMPORTING
           ev_sql_where = lv_sql_where.
       IF lv_sql_where IS NOT INITIAL.
-        lv_sql = |{ lv_sql } WHERE ( { lv_sql_where } )|.
+        LOOP AT lt_range_ref ASSIGNING <ls_range_ref>.
+          lv_field = <ls_range_ref>-attribute.
+          REPLACE ALL OCCURRENCES OF | { lv_field } | IN lv_sql_where WITH | "{ lv_field }" |.
+        ENDLOOP.
+        lv_sql_where = | AND ( { lv_sql_where } )|.
       ENDIF.
     ENDIF.
 
     " MANDT
     IF lo_rtti->has_property( cl_abap_structdescr=>typepropkind_hasclient ).
       READ TABLE lt_field_list INTO ls_field_list WITH KEY datatype = 'CLNT'.
-      lv_sql = |{ lv_sql } AND { ls_field_list-fieldname } = { sy-mandt }|.
+      lv_sql_where = |{ lv_sql_where } AND "{ ls_field_list-fieldname }" = { sy-mandt }|.
     ENDIF.
 
     " constant field & value
     LOOP AT lt_const_field INTO lv_field WHERE table_line IS NOT INITIAL.
       lv_index = sy-tabix.
-      lv_sql = |{ lv_sql } AND { lv_field } = '{ lt_const_value[ lv_index ] }'|.
+      lv_sql_where = |{ lv_sql_where } AND "{ lv_field }" = '{ lt_const_value[ lv_index ] }'|.
     ENDLOOP.
 
     " shlp-textsearch
@@ -344,31 +411,40 @@ FUNCTION zarsh_f4.
         ENDIF.
       ENDIF.
 
-      lv_sql = |{ lv_sql } AND CONTAINS(|.
-      lv_sql = |{ lv_sql }({ lv_sql_select }),|.
+      lv_sql_where = |{ lv_sql_where } AND CONTAINS(|.
+      lv_sql_where = |{ lv_sql_where }( { lv_sql_select }),|.
       lv_string = '*' && shlp-textsearch-request && '*'.
       lv_string = cl_abap_dyn_prg=>quote( lv_string ).
       REPLACE ALL OCCURRENCES OF '%' IN lv_string WITH '\%'.
-      lv_sql = |{ lv_sql }{ lv_string },|.
+      lv_sql_where = |{ lv_sql_where }{ lv_string },|.
       IF lv_no_fuzzy EQ abap_false.
-        lv_sql = |{ lv_sql }fuzzy({ shlp-intdescr-fuzzy_similarity },'similarCalculationMode=search'))|.
+        lv_sql_where = |{ lv_sql_where }fuzzy({ shlp-intdescr-fuzzy_similarity },'similarCalculationMode=search'))|.
       ELSE.
-        lv_sql = |{ lv_sql }exact)|.
+        lv_sql_where = |{ lv_sql_where }exact)|.
       ENDIF.
       IF lv_sql NP 'SELECT DISTINCT *'.
-        lv_sql = |{ lv_sql } ORDER BY SCORE() DESC, "{ lt_field[ 1 ] }" ASC|.
+        lv_sql_where = |{ lv_sql_where } ORDER BY SCORE() DESC, "{ lt_field[ 1 ] }" ASC|.
         callcontrol-sortoff = abap_true.
       ENDIF.
     ENDIF.
 
-    FIND 'WHERE' IN lv_sql.
-    IF sy-subrc <> 0.
-      REPLACE FIRST OCCURRENCE OF | AND | IN lv_sql WITH | WHERE |.
-    ENDIF.
+    REPLACE FIRST OCCURRENCE OF | AND | IN lv_sql_where WITH | WHERE |.
+    lv_sql = |{ lv_sql } { lv_sql_where }|.
     FIND 'ORDER BY' IN lv_sql.
     IF sy-subrc <> 0.
       lv_sql = |{ lv_sql } ORDER BY "{ lt_field[ 1 ] }" ASC|.
       callcontrol-sortoff = abap_true.
+    ENDIF.
+
+    IF lv_text_table IS NOT INITIAL.
+      LOOP AT lt_field_list INTO ls_field_list.
+        lv_field = ls_field_list-fieldname.
+        IF ls_field_list-tabname EQ lv_table.
+          REPLACE ALL OCCURRENCES OF | "{ lv_field }"| IN lv_sql WITH | A."{ lv_field }"|.
+        ELSEIF ls_field_list-tabname EQ lv_text_table..
+          REPLACE ALL OCCURRENCES OF | "{ lv_field }"| IN lv_sql WITH | T."{ lv_field }"|.
+        ENDIF.
+      ENDLOOP.
     ENDIF.
 
     " maxrecords
@@ -423,6 +499,11 @@ FUNCTION zarsh_f4.
     ENDLOOP.
 
 * field desc
+    lv_index = lines( lt_field ) + 1.
+    lv_field = 'EV_FIELD' && lv_index.
+    DELETE shlp-fielddescr WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
+    DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
+
     LOOP AT lt_field INTO lv_field.
       lv_index = sy-tabix.
       READ TABLE lt_field_list INTO ls_field_list WITH KEY fieldname = lv_field BINARY SEARCH.
@@ -465,10 +546,6 @@ FUNCTION zarsh_f4.
       <ls_fieldprop>-shlpselpos = <ls_fieldprop>-shlplispos.
     ENDLOOP.
 
-    lv_index = lines( lt_field ) + 1.
-    lv_field = 'EV_FIELD' && lv_index.
-    DELETE shlp-fielddescr WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
-    DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
 
 * map
     CALL FUNCTION 'F4UT_RESULTS_MAP'
@@ -482,54 +559,59 @@ FUNCTION zarsh_f4.
 
   ELSE.
     " F4 help
-    IF line_exists( shlp-fielddescr[ fieldname = 'IV_TABLE' ] ).
+
 * field desc
-      CLEAR: shlp-fielddescr[], ls_fielddescr, ls_fieldprop.
+    CLEAR: shlp-fielddescr[], ls_fielddescr.
 
-      LOOP AT lt_field INTO lv_field.
+    LOOP AT lt_field INTO lv_field.
+      lv_index = sy-tabix.
+
+      READ TABLE lt_field_list INTO ls_fielddescr WITH KEY fieldname = lv_field BINARY SEARCH.
+
+      ls_fielddescr-tabname = lv_table.
+      ls_fielddescr-fieldname = lv_field.
+      ls_fielddescr-position = lv_index.
+      ls_fielddescr-offset = lv_offset.
+      IF ls_fielddescr-leng EQ 0 OR ls_fielddescr-leng > 200.
+        " max length = 200
+        ls_fielddescr-leng = 200.
+        ls_fielddescr-intlen = 400.
+        ls_fielddescr-outputlen = 200.
+      ENDIF.
+      lv_offset = ls_fielddescr-offset + ls_fielddescr-intlen.
+      lv_mod4 = lv_offset MOD 4.
+      IF lv_mod4 > 0.
+        lv_offset = lv_offset + 4 - lv_mod4.
+      ENDIF.
+      IF lv_offset > 2000.
+        " cut over
+        EXIT.
+      ENDIF.
+      APPEND ls_fielddescr TO shlp-fielddescr.
+
+    ENDLOOP.
+
+    lv_index = lines( lt_field ).
+    lv_field = 'EV_FIELD' && lv_index.
+    DELETE shlp-fieldprop WHERE fieldname NOT BETWEEN 'EV_FIELD1' AND lv_field.
+
+    LOOP AT shlp-fielddescr INTO ls_fielddescr.
+      lv_index = sy-tabix.
+      CLEAR: ls_fieldprop.
+      ls_fieldprop-fieldname = ls_fielddescr-fieldname.
+      ls_fieldprop-shlpselpos = lv_index.
+      APPEND ls_fieldprop TO shlp-fieldprop.
+
+      READ TABLE lt_field TRANSPORTING NO FIELDS WITH KEY table_line = ls_fielddescr-fieldname.
+      IF sy-subrc EQ 0.
         lv_index = sy-tabix.
+        ls_fielddescr-fieldname = 'EV_FIELD' && lv_index.
+        CLEAR: ls_fielddescr-position.
+        APPEND ls_fielddescr TO lt_fielddescr.
+      ENDIF.
+    ENDLOOP.
+    APPEND LINES OF lt_fielddescr TO shlp-fielddescr.
 
-        READ TABLE lt_field_list INTO ls_fielddescr WITH KEY fieldname = lv_field BINARY SEARCH.
-
-        ls_fielddescr-tabname = lv_table.
-        ls_fielddescr-fieldname = lv_field.
-        ls_fielddescr-position = lv_index.
-        ls_fielddescr-offset = lv_offset.
-        IF ls_fielddescr-leng EQ 0 OR ls_fielddescr-leng > 200.
-          " max length = 200
-          ls_fielddescr-leng = 200.
-          ls_fielddescr-intlen = 400.
-          ls_fielddescr-outputlen = 200.
-        ENDIF.
-        lv_offset = ls_fielddescr-offset + ls_fielddescr-intlen.
-        lv_mod4 = lv_offset MOD 4.
-        IF lv_mod4 > 0.
-          lv_offset = lv_offset + 4 - lv_mod4.
-        ENDIF.
-        IF lv_offset > 2000.
-          " cut over
-          EXIT.
-        ENDIF.
-        APPEND ls_fielddescr TO shlp-fielddescr.
-
-        ls_fieldprop-fieldname = ls_fielddescr-fieldname.
-        ls_fieldprop-shlpselpos = lv_index.
-        APPEND ls_fieldprop TO shlp-fieldprop.
-      ENDLOOP.
-
-      LOOP AT shlp-fielddescr ASSIGNING <ls_fielddescr>.
-        READ TABLE lt_field TRANSPORTING NO FIELDS WITH KEY table_line = <ls_fielddescr>-fieldname.
-        IF sy-subrc EQ 0.
-          lv_index = sy-tabix.
-          ls_fielddescr = <ls_fielddescr>.
-          CLEAR: ls_fielddescr-position.
-          APPEND ls_fielddescr TO lt_fielddescr.
-          <ls_fielddescr>-fieldname = 'EV_FIELD' && lv_index.
-        ENDIF.
-      ENDLOOP.
-      APPEND LINES OF lt_fielddescr TO shlp-fielddescr.
-
-    ENDIF.
 
 * map
     CALL FUNCTION 'F4UT_RESULTS_MAP'
@@ -544,9 +626,6 @@ FUNCTION zarsh_f4.
   ENDIF.
 
 
-  lv_index = lines( lt_field ).
-  CLEAR: ls_fieldprop.
-  MODIFY shlp-fieldprop FROM ls_fieldprop TRANSPORTING shlplispos shlpselpos WHERE shlplispos > lv_index.
 
   IF callcontrol-step EQ 'SELECT'.
     callcontrol-step = 'DISP'.

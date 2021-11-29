@@ -10,12 +10,16 @@ FUNCTION zarsh_proposal.
 *"     REFERENCE(EV_DISTINCT) TYPE  FLAG
 *"----------------------------------------------------------------------
 
-  DATA: ls_dd04v          TYPE dd04v,
-        lo_rtti           TYPE REF TO cl_abap_structdescr,
-        lt_field_list     TYPE ddfields,
-        ls_field_list     TYPE dfies,
-        ls_field_list_ref TYPE dfies,
-        lv_field          TYPE string.
+  DATA: ls_dd04v           TYPE dd04v,
+        lo_rtti            TYPE REF TO cl_abap_structdescr,
+        lt_field_list      TYPE ddfields,
+        lt_field_list_text TYPE ddfields,
+        ls_field_list      TYPE dfies,
+        ls_field_list_ref  TYPE dfies,
+        lt_field           TYPE TABLE OF string,
+        lv_field           TYPE string,
+        lv_text_table      TYPE tabname,
+        lv_index           TYPE i.
 
   CLEAR: et_field.
   ev_tabname = iv_tabname.
@@ -41,6 +45,19 @@ FUNCTION zarsh_proposal.
     RETURN.
   ENDIF.
   lt_field_list = lo_rtti->get_ddic_field_list( ).
+  SELECT SINGLE tabname
+    INTO lv_text_table
+    FROM dd08l
+    WHERE as4local = 'A'
+      AND checktable = ev_tabname
+      AND frkart = 'TEXT'.
+  IF lv_text_table IS NOT INITIAL.
+    CALL FUNCTION 'DDIF_FIELDINFO_GET'
+      EXPORTING
+        tabname   = lv_text_table
+      TABLES
+        dfies_tab = lt_field_list_text.
+  ENDIF.
 
   IF ls_dd04v-entitytab IS NOT INITIAL.
     " domain value table
@@ -70,6 +87,7 @@ FUNCTION zarsh_proposal.
         ENDIF.
       ENDIF.
     ENDIF.
+    lv_index = sy-tabix - 1.
     lv_field = ls_field_list-fieldname.
     APPEND lv_field TO et_field.
     IF ls_field_list-reffield IS NOT INITIAL AND
@@ -77,8 +95,27 @@ FUNCTION zarsh_proposal.
       lv_field = ls_field_list-reffield.
       APPEND lv_field TO et_field.
     ENDIF.
+    IF ls_field_list-keyflag EQ abap_true AND lv_index > 1.
+      LOOP AT lt_field_list INTO ls_field_list TO lv_index WHERE datatype <> 'CLNT'.
+        lv_field = ls_field_list-fieldname.
+        APPEND lv_field TO lt_field.
+      ENDLOOP.
+      INSERT LINES OF lt_field INTO et_field INDEX 1.
+    ENDIF.
+
     " DISTINCT on
     ev_distinct = abap_true.
+  ENDIF.
+
+
+  IF lv_text_table IS NOT INITIAL.
+    IF lines( et_field ) > 6.
+      DELETE et_field FROM 7.
+    ENDIF.
+    LOOP AT lt_field_list_text INTO ls_field_list WHERE keyflag = abap_false.
+      lv_field = ls_field_list-fieldname.
+      APPEND lv_field TO et_field.
+    ENDLOOP.
   ENDIF.
 
 
