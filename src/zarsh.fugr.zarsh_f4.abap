@@ -344,7 +344,7 @@ FUNCTION zarsh_f4.
     lv_sql = |{ lv_sql } { lv_sql_select } FROM "{ lv_table }"|.
 
     IF lv_text_table IS NOT INITIAL.
-      lv_sql = |{ lv_sql } AS A JOIN "{ lv_text_table }" AS T|.
+      lv_sql = |{ lv_sql } AS A LEFT OUTER JOIN "{ lv_text_table }" AS T|.
       LOOP AT lt_field_list_text INTO ls_field_list WHERE keyflag = abap_true.
         lv_index = sy-tabix.
         IF lv_index EQ 1.
