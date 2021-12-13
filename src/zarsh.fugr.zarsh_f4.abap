@@ -591,16 +591,19 @@ FUNCTION zarsh_f4.
 
     ENDLOOP.
 
-    lv_index = lines( lt_field ).
+    lv_index = lines( lt_field ) + 1.
     lv_field = 'EV_FIELD' && lv_index.
-    DELETE shlp-fieldprop WHERE fieldname NOT BETWEEN 'EV_FIELD1' AND lv_field.
+    DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
 
     LOOP AT shlp-fielddescr INTO ls_fielddescr.
       lv_index = sy-tabix.
-      CLEAR: ls_fieldprop.
-      ls_fieldprop-fieldname = ls_fielddescr-fieldname.
-      ls_fieldprop-shlpselpos = lv_index.
-      APPEND ls_fieldprop TO shlp-fieldprop.
+      READ TABLE shlp-fieldprop TRANSPORTING NO FIELDS WITH KEY fieldname = ls_fielddescr-fieldname.
+      IF sy-subrc <> 0.
+        CLEAR: ls_fieldprop.
+        ls_fieldprop-fieldname = ls_fielddescr-fieldname.
+        ls_fieldprop-shlpselpos = lv_index.
+        APPEND ls_fieldprop TO shlp-fieldprop.
+      ENDIF.
 
       READ TABLE lt_field TRANSPORTING NO FIELDS WITH KEY table_line = ls_fielddescr-fieldname.
       IF sy-subrc EQ 0.
