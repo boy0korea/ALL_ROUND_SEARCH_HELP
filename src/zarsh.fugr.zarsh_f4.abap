@@ -470,10 +470,9 @@ FUNCTION zarsh_f4.
     ENDTRY.
 
     " maxexceed
-    IF callcontrol-maxrecords IS NOT INITIAL AND
-      lines( <lt_data> ) > callcontrol-maxrecords.
-      DELETE <lt_data> FROM callcontrol-maxrecords + 1.
+    IF lv_maxnum IS NOT INITIAL AND lines( <lt_data> ) >= lv_maxnum.
       callcontrol-maxexceed = abap_true.
+      DELETE <lt_data> FROM lv_maxnum.
     ENDIF.
 
   ENDIF.
