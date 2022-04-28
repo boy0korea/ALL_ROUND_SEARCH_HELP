@@ -324,6 +324,10 @@ FUNCTION zarsh_f4.
       ls_result_comp-name = lv_field.
       ls_result_comp-type ?= cl_abap_elemdescr=>describe_by_name( ls_field_list-rollname ).
       APPEND ls_result_comp TO lt_result_comp.
+      IF sy-tabix EQ 9.
+        " max index of EV_FIELD is 9
+        EXIT.
+      ENDIF.
     ENDLOOP.
   ENDIF.
   CONCATENATE LINES OF lt_string INTO lv_sql_select SEPARATED BY `, `.
@@ -499,9 +503,11 @@ FUNCTION zarsh_f4.
 
 * field desc
     lv_index = lines( lt_field ) + 1.
-    lv_field = 'EV_FIELD' && lv_index.
-    DELETE shlp-fielddescr WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
-    DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
+    IF lv_index <= 9.
+      lv_field = 'EV_FIELD' && lv_index.
+      DELETE shlp-fielddescr WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
+      DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
+    ENDIF.
 
     LOOP AT lt_field INTO lv_field.
       lv_index = sy-tabix.
@@ -591,8 +597,10 @@ FUNCTION zarsh_f4.
     ENDLOOP.
 
     lv_index = lines( lt_field ) + 1.
-    lv_field = 'EV_FIELD' && lv_index.
-    DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
+    IF lv_index <= 9.
+      lv_field = 'EV_FIELD' && lv_index.
+      DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
+    ENDIF.
 
     LOOP AT shlp-fielddescr INTO ls_fielddescr.
       lv_index = sy-tabix.
