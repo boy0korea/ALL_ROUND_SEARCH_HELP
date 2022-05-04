@@ -20,8 +20,8 @@ FUNCTION zarsh_f4.
         lv_table            TYPE tabname,
         lv_distinct         TYPE flag,
         lv_no_fuzzy         TYPE flag,
-        lt_const_field      TYPE TABLE OF string,
-        lt_const_value      TYPE TABLE OF string,
+        lt_const            TYPE tihttpnvp,
+        ls_const            TYPE ihttpnvp,
         lt_range_ref        TYPE wdr_so_t_range_ref,
         lo_rtti             TYPE REF TO cl_abap_structdescr,
         lt_string           TYPE TABLE OF string,
@@ -63,9 +63,9 @@ FUNCTION zarsh_f4.
   CLEAR: record_tab[].
 
   lt_field = VALUE #( ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ).
-  lt_const_field = VALUE #( ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ).
-  lt_const_value = VALUE #( ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ).
-  " shlp-selopt
+  lt_const = VALUE #( ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ).
+
+" shlp-selopt
   LOOP AT shlp-selopt INTO ls_selopt.
     CASE ls_selopt-shlpfield.
       WHEN 'IV_TABLE'.
@@ -74,45 +74,26 @@ FUNCTION zarsh_f4.
         lv_distinct = ls_selopt-low.
       WHEN 'IV_NO_FUZZY'.
         lv_no_fuzzy = ls_selopt-low.
-      WHEN 'IV_FIELD1'.
-        lt_field[ 1 ] = ls_selopt-low.
-      WHEN 'IV_FIELD2'.
-        lt_field[ 2 ] = ls_selopt-low.
-      WHEN 'IV_FIELD3'.
-        lt_field[ 3 ] = ls_selopt-low.
-      WHEN 'IV_FIELD4'.
-        lt_field[ 4 ] = ls_selopt-low.
-      WHEN 'IV_FIELD5'.
-        lt_field[ 5 ] = ls_selopt-low.
-      WHEN 'IV_FIELD6'.
-        lt_field[ 6 ] = ls_selopt-low.
-      WHEN 'IV_FIELD7'.
-        lt_field[ 7 ] = ls_selopt-low.
-      WHEN 'IV_FIELD8'.
-        lt_field[ 8 ] = ls_selopt-low.
-      WHEN 'IV_FIELD9'.
-        lt_field[ 9 ] = ls_selopt-low.
-      WHEN 'IV_CONST_FIELD01'.
-        lt_const_field[ 1 ] = ls_selopt-low.
-      WHEN 'IV_CONST_FIELD02'.
-        lt_const_field[ 2 ] = ls_selopt-low.
-      WHEN 'IV_CONST_FIELD03'.
-        lt_const_field[ 3 ] = ls_selopt-low.
-      WHEN 'IV_CONST_VALUE01'.
-        lt_const_value[ 1 ] = ls_selopt-low.
-      WHEN 'IV_CONST_VALUE02'.
-        lt_const_value[ 2 ] = ls_selopt-low.
-      WHEN 'IV_CONST_VALUE03'.
-        lt_const_value[ 3 ] = ls_selopt-low.
       WHEN OTHERS.
-        AT NEW shlpfield.
-          APPEND INITIAL LINE TO lt_range_ref ASSIGNING <ls_range_ref>.
-          <ls_range_ref>-attribute = ls_selopt-shlpfield.
-          CREATE DATA <ls_range_ref>-range TYPE sabp_t_range_options.
-          ASSIGN <ls_range_ref>-range->* TO <lt_range>.
-        ENDAT.
-        APPEND INITIAL LINE TO <lt_range> ASSIGNING <ls_range>.
-        MOVE-CORRESPONDING ls_selopt TO <ls_range>.
+        IF ls_selopt-shlpfield CP 'IV_FIELD+'.
+          lv_index = ls_selopt-shlpfield+8.
+          lt_field[ lv_index ] = ls_selopt-low.
+        ELSEIF ls_selopt-shlpfield CP 'IV_CONST_FIELD++'.
+          lv_index = ls_selopt-shlpfield+14.
+          lt_const[ lv_index ]-name = ls_selopt-low.
+        ELSEIF ls_selopt-shlpfield CP 'IV_CONST_VALUE++'.
+          lv_index = ls_selopt-shlpfield+14.
+          lt_const[ lv_index ]-value = ls_selopt-low.
+        ELSE.
+          AT NEW shlpfield.
+            APPEND INITIAL LINE TO lt_range_ref ASSIGNING <ls_range_ref>.
+            <ls_range_ref>-attribute = ls_selopt-shlpfield.
+            CREATE DATA <ls_range_ref>-range TYPE sabp_t_range_options.
+            ASSIGN <ls_range_ref>-range->* TO <lt_range>.
+          ENDAT.
+          APPEND INITIAL LINE TO <lt_range> ASSIGNING <ls_range>.
+          MOVE-CORRESPONDING ls_selopt TO <ls_range>.
+        ENDIF.
     ENDCASE.
   ENDLOOP.
 
@@ -158,36 +139,17 @@ FUNCTION zarsh_f4.
         ASSIGN lv_distinct TO <lv_data>.
       WHEN 'IV_NO_FUZZY'.
         ASSIGN lv_no_fuzzy TO <lv_data>.
-      WHEN 'IV_FIELD1'.
-        ASSIGN lt_field[ 1 ] TO <lv_data>.
-      WHEN 'IV_FIELD2'.
-        ASSIGN lt_field[ 2 ] TO <lv_data>.
-      WHEN 'IV_FIELD3'.
-        ASSIGN lt_field[ 3 ] TO <lv_data>.
-      WHEN 'IV_FIELD4'.
-        ASSIGN lt_field[ 4 ] TO <lv_data>.
-      WHEN 'IV_FIELD5'.
-        ASSIGN lt_field[ 5 ] TO <lv_data>.
-      WHEN 'IV_FIELD6'.
-        ASSIGN lt_field[ 6 ] TO <lv_data>.
-      WHEN 'IV_FIELD7'.
-        ASSIGN lt_field[ 7 ] TO <lv_data>.
-      WHEN 'IV_FIELD8'.
-        ASSIGN lt_field[ 8 ] TO <lv_data>.
-      WHEN 'IV_FIELD9'.
-        ASSIGN lt_field[ 9 ] TO <lv_data>.
-      WHEN 'IV_CONST_FIELD01'.
-        ASSIGN lt_const_field[ 1 ] TO <lv_data>.
-      WHEN 'IV_CONST_FIELD02'.
-        ASSIGN lt_const_field[ 2 ] TO <lv_data>.
-      WHEN 'IV_CONST_FIELD03'.
-        ASSIGN lt_const_field[ 3 ] TO <lv_data>.
-      WHEN 'IV_CONST_VALUE01'.
-        ASSIGN lt_const_value[ 1 ] TO <lv_data>.
-      WHEN 'IV_CONST_VALUE02'.
-        ASSIGN lt_const_value[ 2 ] TO <lv_data>.
-      WHEN 'IV_CONST_VALUE03'.
-        ASSIGN lt_const_value[ 3 ] TO <lv_data>.
+      WHEN OTHERS.
+        IF ls_selopt-shlpfield CP 'IV_FIELD+'.
+          lv_index = ls_selopt-shlpfield+8.
+          ASSIGN lt_field[ lv_index ] TO <lv_data>.
+        ELSEIF ls_selopt-shlpfield CP 'IV_CONST_FIELD++'.
+          lv_index = ls_selopt-shlpfield+14.
+          ASSIGN lt_const[ lv_index ]-name TO <lv_data>.
+        ELSEIF ls_selopt-shlpfield CP 'IV_CONST_VALUE++'.
+          lv_index = ls_selopt-shlpfield+14.
+          ASSIGN lt_const[ lv_index ]-value TO <lv_data>.
+        ENDIF.
     ENDCASE.
     IF <lv_data> IS ASSIGNED AND <lv_data> IS INITIAL.
       <lv_data> = ls_fieldprop-defaultval.
@@ -205,36 +167,17 @@ FUNCTION zarsh_f4.
         ASSIGN lv_distinct TO <lv_data>.
       WHEN 'IV_NO_FUZZY'.
         ASSIGN lv_no_fuzzy TO <lv_data>.
-      WHEN 'IV_FIELD1'.
-        ASSIGN lt_field[ 1 ] TO <lv_data>.
-      WHEN 'IV_FIELD2'.
-        ASSIGN lt_field[ 2 ] TO <lv_data>.
-      WHEN 'IV_FIELD3'.
-        ASSIGN lt_field[ 3 ] TO <lv_data>.
-      WHEN 'IV_FIELD4'.
-        ASSIGN lt_field[ 4 ] TO <lv_data>.
-      WHEN 'IV_FIELD5'.
-        ASSIGN lt_field[ 5 ] TO <lv_data>.
-      WHEN 'IV_FIELD6'.
-        ASSIGN lt_field[ 6 ] TO <lv_data>.
-      WHEN 'IV_FIELD7'.
-        ASSIGN lt_field[ 7 ] TO <lv_data>.
-      WHEN 'IV_FIELD8'.
-        ASSIGN lt_field[ 8 ] TO <lv_data>.
-      WHEN 'IV_FIELD9'.
-        ASSIGN lt_field[ 9 ] TO <lv_data>.
-      WHEN 'IV_CONST_FIELD01'.
-        ASSIGN lt_const_field[ 1 ] TO <lv_data>.
-      WHEN 'IV_CONST_FIELD02'.
-        ASSIGN lt_const_field[ 2 ] TO <lv_data>.
-      WHEN 'IV_CONST_FIELD03'.
-        ASSIGN lt_const_field[ 3 ] TO <lv_data>.
-      WHEN 'IV_CONST_VALUE01'.
-        ASSIGN lt_const_value[ 1 ] TO <lv_data>.
-      WHEN 'IV_CONST_VALUE02'.
-        ASSIGN lt_const_value[ 2 ] TO <lv_data>.
-      WHEN 'IV_CONST_VALUE03'.
-        ASSIGN lt_const_value[ 3 ] TO <lv_data>.
+      WHEN OTHERS.
+        IF ls_selopt-shlpfield CP 'IV_FIELD+'.
+          lv_index = ls_selopt-shlpfield+8.
+          ASSIGN lt_field[ lv_index ] TO <lv_data>.
+        ELSEIF ls_selopt-shlpfield CP 'IV_CONST_FIELD++'.
+          lv_index = ls_selopt-shlpfield+14.
+          ASSIGN lt_const[ lv_index ]-name TO <lv_data>.
+        ELSEIF ls_selopt-shlpfield CP 'IV_CONST_VALUE++'.
+          lv_index = ls_selopt-shlpfield+14.
+          ASSIGN lt_const[ lv_index ]-value TO <lv_data>.
+        ENDIF.
     ENDCASE.
     IF <lv_data> IS ASSIGNED AND <lv_data> IS INITIAL.
       <lv_data> = ls_fieldiface-value.
@@ -242,6 +185,7 @@ FUNCTION zarsh_f4.
   ENDLOOP.
 
   DELETE lt_field WHERE table_line IS INITIAL.
+  DELETE lt_const WHERE table_line IS INITIAL.
 
   " case: no parameter
   IF lv_table IS INITIAL.
@@ -393,10 +337,22 @@ FUNCTION zarsh_f4.
     ENDIF.
 
     " constant field & value
-    LOOP AT lt_const_field INTO lv_field WHERE table_line IS NOT INITIAL.
-      lv_index = sy-tabix.
-      lv_sql_where = |{ lv_sql_where } AND "{ lv_field }" = '{ lt_const_value[ lv_index ] }'|.
-    ENDLOOP.
+    IF lt_const IS NOT INITIAL.
+      SORT lt_const BY name value.
+      CLEAR: lt_string.
+      LOOP AT lt_const INTO ls_const WHERE name IS NOT INITIAL.
+        APPEND |'{ ls_const-value }'| TO lt_string.
+        AT END OF name.
+          CONCATENATE LINES OF lt_string INTO lv_string SEPARATED BY ','.
+          IF lines( lt_string ) EQ 1.
+            lv_sql_where = |{ lv_sql_where } AND "{ ls_const-name }" = { lv_string }|.
+          ELSE.
+            lv_sql_where = |{ lv_sql_where } AND "{ ls_const-name }" IN ({ lv_string })|.
+          ENDIF.
+          CLEAR: lt_string.
+        ENDAT.
+      ENDLOOP.
+    ENDIF.
 
     " shlp-textsearch
     IF shlp-textsearch-request IS NOT INITIAL.
