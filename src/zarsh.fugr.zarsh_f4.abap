@@ -23,7 +23,6 @@ FUNCTION zarsh_f4.
         lt_const            TYPE tihttpnvp,
         ls_const            TYPE ihttpnvp,
         lt_range_ref        TYPE wdr_so_t_range_ref,
-        lo_rtti             TYPE REF TO cl_abap_structdescr,
         lt_string           TYPE TABLE OF string,
         lv_string           TYPE string,
         lo_result_rtti      TYPE REF TO cl_abap_structdescr,
@@ -34,6 +33,7 @@ FUNCTION zarsh_f4.
         lv_sql              TYPE string,
         lr_data             TYPE REF TO data,
         lo_result           TYPE REF TO cl_sql_result_set,
+        ls_x030l            TYPE x030l,
         lt_field_list       TYPE ddfields,
         lt_field_list_text  TYPE ddfields,
         ls_field_list       TYPE dfies,
@@ -65,7 +65,7 @@ FUNCTION zarsh_f4.
   lt_field = VALUE #( ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ).
   lt_const = VALUE #( ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ( ) ).
 
-" shlp-selopt
+  " shlp-selopt
   LOOP AT shlp-selopt INTO ls_selopt.
     CASE ls_selopt-shlpfield.
       WHEN 'IV_TABLE'.
@@ -221,9 +221,14 @@ FUNCTION zarsh_f4.
     RETURN.
   ENDIF.
 
-  lo_rtti ?= cl_abap_structdescr=>describe_by_name( lv_table ).
-  CHECK: lo_rtti->get_ddic_header( )-tabform EQ 'T'.  " T	Table/view stored transparently in the database
-  lt_field_list = lo_rtti->get_ddic_field_list( ).
+  CALL FUNCTION 'DDIF_FIELDINFO_GET'
+    EXPORTING
+      tabname   = lv_table
+    IMPORTING
+      x030l_wa  = ls_x030l
+    TABLES
+      dfies_tab = lt_field_list.
+  CHECK: ls_x030l-tabform EQ 'T'.  " T  Table/view stored transparently in the database
   SELECT SINGLE tabname
     INTO lv_text_table
     FROM dd08l
@@ -243,7 +248,6 @@ FUNCTION zarsh_f4.
   SORT lt_field_list BY fieldname.
 
 
-
   CLEAR: lt_string.
   LOOP AT lt_field INTO lv_field.
     READ TABLE lt_field_list INTO ls_field_list WITH KEY fieldname = lv_field BINARY SEARCH.
@@ -256,13 +260,12 @@ FUNCTION zarsh_f4.
     ENDIF.
     APPEND |"{ lv_field }"| TO lt_string.
     ls_result_comp-name = lv_field.
-*    ls_result_comp-type = lo_rtti->get_component_type( lv_field ).
-    ls_result_comp-type ?= cl_abap_elemdescr=>describe_by_name( ls_field_list-rollname ).
+    ls_result_comp-type ?= cl_abap_elemdescr=>describe_by_name( |{ ls_field_list-tabname }-{ ls_field_list-fieldname }| ).
     APPEND ls_result_comp TO lt_result_comp.
   ENDLOOP.
   IF lv_text_table IS NOT INITIAL AND
      lv_text_filed_exist EQ abap_false.
-    IF lines( lt_field ) > 6.
+    IF lines( lt_field ) >= 7.
       DELETE lt_field FROM 7.
       DELETE lt_string FROM 7.
       DELETE lt_result_comp FROM 7.
@@ -272,7 +275,7 @@ FUNCTION zarsh_f4.
       APPEND lv_field TO lt_field.
       APPEND |"{ lv_field }"| TO lt_string.
       ls_result_comp-name = lv_field.
-      ls_result_comp-type ?= cl_abap_elemdescr=>describe_by_name( ls_field_list-rollname ).
+      ls_result_comp-type ?= cl_abap_elemdescr=>describe_by_name( |{ ls_field_list-tabname }-{ ls_field_list-fieldname }| ).
       APPEND ls_result_comp TO lt_result_comp.
       IF sy-tabix EQ 9.
         " max index of EV_FIELD is 9
@@ -337,8 +340,8 @@ FUNCTION zarsh_f4.
     ENDIF.
 
     " MANDT
-    IF lo_rtti->has_property( cl_abap_structdescr=>typepropkind_hasclient ).
-      READ TABLE lt_field_list INTO ls_field_list WITH KEY datatype = 'CLNT'.
+    IF ls_x030l-clpos IS NOT INITIAL.
+      READ TABLE lt_field_list INTO ls_field_list WITH KEY position = ls_x030l-clpos.
       lv_sql_where = |{ lv_sql_where } AND "{ ls_field_list-fieldname }" = { sy-mandt }|.
     ENDIF.
 
@@ -366,7 +369,7 @@ FUNCTION zarsh_f4.
         IF shlp-intdescr-fuzzy_search IS NOT INITIAL AND
            shlp-intdescr-fuzzy_similarity < 1.
           LOOP AT lt_field INTO lv_field.
-            READ TABLE lt_field_list TRANSPORTING NO FIELDS WITH KEY fieldname = lv_field inttype = cl_abap_typedescr=>typekind_char.
+            READ TABLE lt_field_list TRANSPORTING NO FIELDS WITH KEY fieldname = lv_field inttype = cl_abap_typedescr=>typekind_char BINARY SEARCH.
             IF sy-subrc <> 0.
               lv_no_fuzzy = abap_true.
               EXIT.
@@ -390,16 +393,21 @@ FUNCTION zarsh_f4.
       ENDIF.
       IF lv_sql NP 'SELECT DISTINCT *'.
         lv_sql_where = |{ lv_sql_where } ORDER BY SCORE() DESC, "{ lt_field[ 1 ] }" ASC|.
-        callcontrol-sortoff = abap_true.
       ENDIF.
     ENDIF.
 
     REPLACE FIRST OCCURRENCE OF | AND | IN lv_sql_where WITH | WHERE |.
     lv_sql = |{ lv_sql } { lv_sql_where }|.
-    FIND 'ORDER BY' IN lv_sql.
+    FIND | ORDER BY | IN lv_sql.
     IF sy-subrc <> 0.
       lv_sql = |{ lv_sql } ORDER BY "{ lt_field[ 1 ] }" ASC|.
-      callcontrol-sortoff = abap_true.
+    ENDIF.
+    callcontrol-sortoff = abap_true.
+
+    " maxrecords
+    IF callcontrol-maxrecords IS NOT INITIAL.
+      lv_maxnum = callcontrol-maxrecords + 1.
+      lv_sql = |{ lv_sql } LIMIT { lv_maxnum }|.
     ENDIF.
 
     IF lv_text_table IS NOT INITIAL.
@@ -413,11 +421,6 @@ FUNCTION zarsh_f4.
       ENDLOOP.
     ENDIF.
 
-    " maxrecords
-    IF callcontrol-maxrecords IS NOT INITIAL.
-      lv_maxnum = callcontrol-maxrecords + 1.
-      lv_sql = |{ lv_sql } LIMIT { lv_maxnum }|.
-    ENDIF.
 
     TRY .
         NEW cl_sql_statement( )->execute_query(
@@ -436,9 +439,10 @@ FUNCTION zarsh_f4.
     ENDTRY.
 
     " maxexceed
-    IF lv_maxnum IS NOT INITIAL AND lines( <lt_data> ) >= lv_maxnum.
+    IF callcontrol-maxrecords IS NOT INITIAL AND
+      lines( <lt_data> ) > callcontrol-maxrecords.
+      DELETE <lt_data> FROM callcontrol-maxrecords + 1.
       callcontrol-maxexceed = abap_true.
-      DELETE <lt_data> FROM lv_maxnum.
     ENDIF.
 
   ENDIF.
