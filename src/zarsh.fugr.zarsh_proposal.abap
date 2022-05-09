@@ -11,7 +11,7 @@ FUNCTION zarsh_proposal.
 *"----------------------------------------------------------------------
 
   DATA: ls_dd04v           TYPE dd04v,
-        lo_rtti            TYPE REF TO cl_abap_structdescr,
+        ls_x030l           TYPE x030l,
         lt_field_list      TYPE ddfields,
         lt_field_list_text TYPE ddfields,
         ls_field_list      TYPE dfies,
@@ -39,12 +39,18 @@ FUNCTION zarsh_proposal.
 
 
   CHECK: ev_tabname IS NOT INITIAL.
-  lo_rtti ?= cl_abap_structdescr=>describe_by_name( ev_tabname ).
-  IF lo_rtti->get_ddic_header( )-tabform <> 'T'.  " T	Table/view stored transparently in the database
+
+  CALL FUNCTION 'DDIF_FIELDINFO_GET'
+    EXPORTING
+      tabname   = ev_tabname
+    IMPORTING
+      x030l_wa  = ls_x030l
+    TABLES
+      dfies_tab = lt_field_list.
+  IF ls_x030l-tabform <> 'T'.  " T  Table/view stored transparently in the database
     CLEAR: ev_tabname.
     RETURN.
   ENDIF.
-  lt_field_list = lo_rtti->get_ddic_field_list( ).
   SELECT SINGLE tabname
     INTO lv_text_table
     FROM dd08l
@@ -65,8 +71,8 @@ FUNCTION zarsh_proposal.
       lv_field = ls_field_list-fieldname.
       APPEND lv_field TO et_field.
     ENDLOOP.
-    IF lo_rtti->has_property( cl_abap_structdescr=>typepropkind_hasclient ).
-      READ TABLE lt_field_list INTO ls_field_list WITH KEY datatype = 'CLNT'.
+    IF ls_x030l-clpos IS NOT INITIAL.
+      READ TABLE lt_field_list INTO ls_field_list WITH KEY position = ls_x030l-clpos.
       DELETE et_field WHERE table_line = ls_field_list-fieldname.
     ENDIF.
     READ TABLE lt_field_list INTO ls_field_list WITH KEY domname = ls_dd04v-domname.
@@ -109,7 +115,7 @@ FUNCTION zarsh_proposal.
 
 
   IF lv_text_table IS NOT INITIAL.
-    IF lines( et_field ) > 6.
+    IF lines( et_field ) >= 7.
       DELETE et_field FROM 7.
     ENDIF.
     LOOP AT lt_field_list_text INTO ls_field_list WHERE keyflag = abap_false.

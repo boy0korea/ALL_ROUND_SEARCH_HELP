@@ -37,7 +37,6 @@ FUNCTION zarsh_f4.
         lt_field_list       TYPE ddfields,
         lt_field_list_text  TYPE ddfields,
         ls_field_list       TYPE dfies,
-        ls_field_list_ref   TYPE dfies,
         lt_field            TYPE TABLE OF string,
         lv_field            TYPE string,
         lv_text_table       TYPE tabname,
@@ -146,14 +145,14 @@ FUNCTION zarsh_f4.
       WHEN 'IV_NO_FUZZY'.
         ASSIGN lv_no_fuzzy TO <lv_data>.
       WHEN OTHERS.
-        IF ls_selopt-shlpfield CP 'IV_FIELD+'.
-          lv_index = ls_selopt-shlpfield+8.
+        IF ls_fieldprop-fieldname CP 'IV_FIELD+'.
+          lv_index = ls_fieldprop-fieldname+8.
           ASSIGN lt_field[ lv_index ] TO <lv_data>.
-        ELSEIF ls_selopt-shlpfield CP 'IV_CONST_FIELD++'.
-          lv_index = ls_selopt-shlpfield+14.
+        ELSEIF ls_fieldprop-fieldname CP 'IV_CONST_FIELD++'.
+          lv_index = ls_fieldprop-fieldname+14.
           ASSIGN lt_const[ lv_index ]-name TO <lv_data>.
-        ELSEIF ls_selopt-shlpfield CP 'IV_CONST_VALUE++'.
-          lv_index = ls_selopt-shlpfield+14.
+        ELSEIF ls_fieldprop-fieldname CP 'IV_CONST_VALUE++'.
+          lv_index = ls_fieldprop-fieldname+14.
           ASSIGN lt_const[ lv_index ]-value TO <lv_data>.
         ENDIF.
     ENDCASE.
@@ -174,14 +173,14 @@ FUNCTION zarsh_f4.
       WHEN 'IV_NO_FUZZY'.
         ASSIGN lv_no_fuzzy TO <lv_data>.
       WHEN OTHERS.
-        IF ls_selopt-shlpfield CP 'IV_FIELD+'.
-          lv_index = ls_selopt-shlpfield+8.
+        IF ls_fieldiface-shlpfield CP 'IV_FIELD+'.
+          lv_index = ls_fieldiface-shlpfield+8.
           ASSIGN lt_field[ lv_index ] TO <lv_data>.
-        ELSEIF ls_selopt-shlpfield CP 'IV_CONST_FIELD++'.
-          lv_index = ls_selopt-shlpfield+14.
+        ELSEIF ls_fieldiface-shlpfield CP 'IV_CONST_FIELD++'.
+          lv_index = ls_fieldiface-shlpfield+14.
           ASSIGN lt_const[ lv_index ]-name TO <lv_data>.
-        ELSEIF ls_selopt-shlpfield CP 'IV_CONST_VALUE++'.
-          lv_index = ls_selopt-shlpfield+14.
+        ELSEIF ls_fieldiface-shlpfield CP 'IV_CONST_VALUE++'.
+          lv_index = ls_fieldiface-shlpfield+14.
           ASSIGN lt_const[ lv_index ]-value TO <lv_data>.
         ENDIF.
     ENDCASE.
@@ -451,72 +450,69 @@ FUNCTION zarsh_f4.
   IF cl_dsh_type_ahead_processor=>type_ahead_active EQ abap_true.
     " type ahead = value suggests
 
-    LOOP AT <lt_data> ASSIGNING <ls_data>.
-      CLEAR: ls_data_suggest.
-      LOOP AT lt_field INTO lv_field.
-        lv_index = sy-tabix.
-        ASSIGN COMPONENT lv_index OF STRUCTURE <ls_data> TO <lv_data>.
-        IF sy-subrc <> 0.
-          EXIT.
-        ENDIF.
-        ASSIGN COMPONENT lv_index OF STRUCTURE ls_data_suggest TO <lv_data_suggest>.
-        WRITE <lv_data> TO <lv_data_suggest>.
-        CONDENSE <lv_data_suggest>.
+    IF <lt_data> IS NOT INITIAL.
+      LOOP AT <lt_data> ASSIGNING <ls_data>.
+        CLEAR: ls_data_suggest.
+
+        LOOP AT lt_field INTO lv_field.
+          lv_index = sy-tabix.
+          ASSIGN COMPONENT lv_field OF STRUCTURE <ls_data> TO <lv_data>.
+          CHECK: sy-subrc EQ 0.
+          ASSIGN COMPONENT lv_index OF STRUCTURE ls_data_suggest TO <lv_data_suggest>.
+          WRITE <lv_data> TO <lv_data_suggest>.
+          CONDENSE <lv_data_suggest>.
+        ENDLOOP.
+
+        APPEND ls_data_suggest TO lt_data_suggest.
       ENDLOOP.
 
-      APPEND ls_data_suggest TO lt_data_suggest.
-    ENDLOOP.
+      LOOP AT lt_field_list INTO ls_field_list WHERE reffield IS NOT INITIAL.
+        READ TABLE lt_field TRANSPORTING NO FIELDS WITH TABLE KEY table_line = ls_field_list-reffield.
+        CHECK: sy-subrc EQ 0.
+        READ TABLE lt_field TRANSPORTING NO FIELDS WITH TABLE KEY table_line = ls_field_list-fieldname.
+        CHECK: sy-subrc EQ 0.
+        lv_index = sy-tabix.
 
-* field desc
-    lv_index = lines( lt_field ) + 1.
-    IF lv_index <= 9.
-      lv_field = 'EV_FIELD' && lv_index.
-      DELETE shlp-fielddescr WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
-      DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
+        LOOP AT <lt_data> ASSIGNING <ls_data>.
+          ASSIGN COMPONENT 'EV_FIELD' && lv_index OF STRUCTURE lt_data_suggest[ sy-tabix ] TO <lv_data_suggest>.
+          ASSIGN COMPONENT ls_field_list-fieldname OF STRUCTURE <ls_data> TO <lv_data>.
+          ASSIGN COMPONENT ls_field_list-reffield OF STRUCTURE <ls_data> TO <lv_data_ref>.
+          CASE ls_field_list-datatype.
+            WHEN 'QUAN'.
+              WRITE <lv_data> TO <lv_data_suggest> UNIT <lv_data_ref>.
+            WHEN 'CURR' .
+              WRITE <lv_data> TO <lv_data_suggest> CURRENCY <lv_data_ref>.
+          ENDCASE.
+          CONDENSE <lv_data_suggest>.
+        ENDLOOP.
+      ENDLOOP.
     ENDIF.
 
-    LOOP AT lt_field INTO lv_field.
-      lv_index = sy-tabix.
-      READ TABLE lt_field_list INTO ls_field_list WITH KEY fieldname = lv_field BINARY SEARCH.
-      READ TABLE shlp-fielddescr ASSIGNING <ls_fielddescr> WITH KEY fieldname = lv_field.
-      IF sy-subrc EQ 0.
-        " label text
-        <ls_fielddescr>-reptext = ls_field_list-reptext.
-        <ls_fielddescr>-scrtext_s = ls_field_list-scrtext_s.
-        <ls_fielddescr>-scrtext_m = ls_field_list-scrtext_m.
-        <ls_fielddescr>-scrtext_l = ls_field_list-scrtext_l.
-      ENDIF.
-      READ TABLE shlp-fielddescr ASSIGNING <ls_fielddescr> WITH KEY fieldname = 'EV_FIELD' && lv_index.
-      IF sy-subrc EQ 0.
-        " label text
-        <ls_fielddescr>-reptext = ls_field_list-reptext.
-        <ls_fielddescr>-scrtext_s = ls_field_list-scrtext_s.
-        <ls_fielddescr>-scrtext_m = ls_field_list-scrtext_m.
-        <ls_fielddescr>-scrtext_l = ls_field_list-scrtext_l.
-      ENDIF.
-
-      IF ls_field_list-reffield IS NOT INITIAL.
-        READ TABLE lt_field_list INTO ls_field_list_ref WITH KEY fieldname = ls_field_list-reffield BINARY SEARCH.
+    IF NOT line_exists( shlp-fieldprop[ shlpselpos = 1 ] ).
+      " field desc
+      LOOP AT lt_field INTO lv_field.
+        lv_index = sy-tabix.
+        READ TABLE lt_field_list INTO ls_field_list WITH KEY fieldname = lv_field BINARY SEARCH.
+        READ TABLE shlp-fielddescr ASSIGNING <ls_fielddescr> WITH KEY fieldname = 'EV_FIELD' && lv_index.
         IF sy-subrc EQ 0.
-          LOOP AT <lt_data> ASSIGNING <ls_data>.
-            ASSIGN COMPONENT 'EV_FIELD' && lv_index OF STRUCTURE lt_data_suggest[ sy-tabix ] TO <lv_data_suggest>.
-            ASSIGN COMPONENT ls_field_list-fieldname OF STRUCTURE <ls_data> TO <lv_data>.
-            ASSIGN COMPONENT ls_field_list_ref-fieldname OF STRUCTURE <ls_data> TO <lv_data_ref>.
-            CASE ls_field_list_ref-datatype.
-              WHEN 'UNIT'.
-                WRITE <lv_data> TO <lv_data_suggest> UNIT <lv_data_ref>.
-              WHEN 'CUKY' .
-                WRITE <lv_data> TO <lv_data_suggest> CURRENCY <lv_data_ref>.
-            ENDCASE.
-            CONDENSE <lv_data_suggest>.
-          ENDLOOP.
+          " label text
+          <ls_fielddescr>-reptext = ls_field_list-reptext.
+          <ls_fielddescr>-scrtext_s = ls_field_list-scrtext_s.
+          <ls_fielddescr>-scrtext_m = ls_field_list-scrtext_m.
+          <ls_fielddescr>-scrtext_l = ls_field_list-scrtext_l.
         ENDIF.
-      ENDIF.
-    ENDLOOP.
-    LOOP AT shlp-fieldprop ASSIGNING <ls_fieldprop> WHERE shlplispos IS NOT INITIAL.
-      <ls_fieldprop>-shlpselpos = <ls_fieldprop>-shlplispos.
-    ENDLOOP.
+      ENDLOOP.
 
+      " field prop
+      IF lv_index < 9.
+        lv_index = lv_index + 1.
+        lv_field = 'EV_FIELD' && lv_index.
+        DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
+      ENDIF.
+      LOOP AT shlp-fieldprop ASSIGNING <ls_fieldprop> WHERE shlplispos IS NOT INITIAL.
+        <ls_fieldprop>-shlpselpos = <ls_fieldprop>-shlplispos.
+      ENDLOOP.
+    ENDIF.
 
 * map
     CALL FUNCTION 'F4UT_RESULTS_MAP'
@@ -531,17 +527,16 @@ FUNCTION zarsh_f4.
   ELSE.
     " F4 help
 
-* field desc
-    CLEAR: shlp-fielddescr[], ls_fielddescr.
-
+    " field desc
+    DELETE shlp-fielddescr WHERE fieldname NP 'IV_*'.
     LOOP AT lt_field INTO lv_field.
       lv_index = sy-tabix.
 
-      READ TABLE lt_field_list INTO ls_fielddescr WITH KEY fieldname = lv_field BINARY SEARCH.
-
+      READ TABLE lt_field_list INTO ls_field_list WITH KEY fieldname = lv_field BINARY SEARCH.
+      ls_fielddescr = ls_field_list.
       ls_fielddescr-tabname = lv_table.
       ls_fielddescr-fieldname = lv_field.
-      ls_fielddescr-position = lv_index.
+      ls_fielddescr-position = 0.
       ls_fielddescr-offset = lv_offset.
       IF ls_fielddescr-leng EQ 0 OR ls_fielddescr-leng > 200.
         " max length = 200
@@ -556,38 +551,31 @@ FUNCTION zarsh_f4.
       ENDIF.
       IF lv_offset > 2000.
         " cut over
+        DELETE lt_field FROM lv_index.
         EXIT.
       ENDIF.
+
       APPEND ls_fielddescr TO shlp-fielddescr.
 
+      ls_fielddescr-fieldname = 'EV_FIELD' && lv_index.
+      APPEND ls_fielddescr TO shlp-fielddescr.
     ENDLOOP.
 
-    lv_index = lines( lt_field ) + 1.
-    IF lv_index <= 9.
-      lv_field = 'EV_FIELD' && lv_index.
-      DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
-    ENDIF.
-
-    LOOP AT shlp-fielddescr INTO ls_fielddescr.
-      lv_index = sy-tabix.
-      READ TABLE shlp-fieldprop TRANSPORTING NO FIELDS WITH KEY fieldname = ls_fielddescr-fieldname.
-      IF sy-subrc <> 0.
+    " field prop
+    IF NOT line_exists( shlp-fieldprop[ shlpselpos = 1 ] ).
+      LOOP AT lt_field INTO lv_field.
+        lv_index = sy-tabix.
         CLEAR: ls_fieldprop.
-        ls_fieldprop-fieldname = ls_fielddescr-fieldname.
+        ls_fieldprop-fieldname = lv_field.
         ls_fieldprop-shlpselpos = lv_index.
         APPEND ls_fieldprop TO shlp-fieldprop.
+      ENDLOOP.
+      IF lv_index < 9.
+        lv_index = lv_index + 1.
+        lv_field = 'EV_FIELD' && lv_index.
+        DELETE shlp-fieldprop WHERE fieldname BETWEEN lv_field AND 'EV_FIELD9'.
       ENDIF.
-
-      READ TABLE lt_field TRANSPORTING NO FIELDS WITH KEY table_line = ls_fielddescr-fieldname.
-      IF sy-subrc EQ 0.
-        lv_index = sy-tabix.
-        ls_fielddescr-fieldname = 'EV_FIELD' && lv_index.
-        CLEAR: ls_fielddescr-position.
-        APPEND ls_fielddescr TO lt_fielddescr.
-      ENDIF.
-    ENDLOOP.
-    APPEND LINES OF lt_fielddescr TO shlp-fielddescr.
-
+    ENDIF.
 
 * map
     CALL FUNCTION 'F4UT_RESULTS_MAP'
