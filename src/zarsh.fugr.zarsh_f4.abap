@@ -228,12 +228,16 @@ FUNCTION zarsh_f4.
     TABLES
       dfies_tab = lt_field_list.
   CHECK: ls_x030l-tabform EQ 'T'.  " T  Table/view stored transparently in the database
-  SELECT SINGLE tabname
-    INTO lv_text_table
-    FROM dd08l
-    WHERE as4local = 'A'
-      AND checktable = lv_table
-      AND frkart = 'TEXT'.
+  READ TABLE lt_field INTO lv_field INDEX 1.
+  READ TABLE lt_field_list INTO ls_field_list WITH KEY fieldname = lv_field.
+  IF ls_field_list-keyflag EQ abap_true.
+    SELECT SINGLE tabname
+      INTO lv_text_table
+      FROM dd08l
+      WHERE as4local = 'A'
+        AND checktable = lv_table
+        AND frkart = 'TEXT'.
+  ENDIF.
   IF lv_text_table IS NOT INITIAL.
     CALL FUNCTION 'DDIF_FIELDINFO_GET'
       EXPORTING
