@@ -28,6 +28,13 @@ ABAP 버전: 750 이상
 
 
 ## English
+### Description
+It calls automatically created search help for detected DB table.
+
+DB table is detected by value table of Data Element and Domain.
+
+If there is no value table, DB table is detected by declation.
+
 ### requirements
 ABAP Version: 750 or higher
 
